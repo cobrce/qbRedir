@@ -17,7 +17,7 @@ def dump(data):
 def dumpfiles(data):
     content = ""
     try:
-        parsed = j.lods(data)
+        parsed = j.loads(data)
         content = '<table style="width:100%"><tr><th>Name</th><th>Size</th><th>Progress</th></tr>'
         if isinstance(parsed,list):
             for line in parsed:
