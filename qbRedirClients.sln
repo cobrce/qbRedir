@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2035
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "qbRedir", "qbRedir\qbRedir.pyproj", "{A1232E1A-5A20-44A1-87A8-E54C81AB8ED3}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "qbRedirClients", "qbRedirClients\qbRedirClients.pyproj", "{A1232E1A-5A20-44A1-87A8-E54C81AB8ED3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
