@@ -3,8 +3,7 @@ from importlib import reload
 from queue import Queue
 import qbredir.dumper
 
-data = open("qbredir/data.json",mode="r").read()
-requested = Queue()
+data = open("qbredir/qbredir/data.json",mode="r").read()
 torrents = {}
 
 def CheckGet(request):
@@ -49,28 +48,18 @@ def settorrentdata(request):
             response = "ok"
     return HttpResponse(response)
 
-def gettorrentdata(request):
-    CheckGet(request)
-    response = ""
-    global torrents
-    global requested
-    if CheckKey(request):
-        if "hash" in request.POST:
-            requested.put(request.POST["hash"])
-            if "hash" in torrents:
-                response = torrents[request.POST["hash"]]
-    return HttpResponse(response)
-
 def files(request):
-    global requested
-    contetnt = "no hash found"
+    content = ""
     if "hash" in request.GET:
         hash = request.GET["hash"]
-        requested.put(hash)
+        content += hash
         if hash in torrents:
             reload(qbredir.dumper)
-            contetnt = qbredir.dumper.dumpfiles(torrents[hash])
-    return HttpResponse(contetnt)
+            content = qbredir.dumper.dumpfiles(torrents[hash])
+    else:
+        content = "no hash found"
+
+    return HttpResponse(content)
 
 def getqueue(request):
     #CheckGet(request)
