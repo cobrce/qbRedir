@@ -1,6 +1,5 @@
 from django.http import HttpRequest, Http404,HttpResponse
 from importlib import reload
-from queue import Queue
 import qbredir.dumper
 
 data =""
