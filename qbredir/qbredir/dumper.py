@@ -16,6 +16,8 @@ def dump(data):
 
 def dumpfiles(data):
     content = ""
+    content = "data"
+    return content
     try:
         parsed = j.loads(data)
         content = '<table style="width:100%"><tr><th>Name</th><th>Size</th><th>Progress</th></tr>'
