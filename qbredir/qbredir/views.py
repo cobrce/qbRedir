@@ -3,7 +3,7 @@ from importlib import reload
 from queue import Queue
 import qbredir.dumper
 
-data = open("qbredir/data.json",mode="r").read()
+data = open("qbredir/qbredir/data.json",mode="r").read()
 requested = Queue()
 torrents = {}
 
