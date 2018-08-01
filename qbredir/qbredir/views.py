@@ -63,7 +63,7 @@ def gettorrentdata(request):
 
 def files(request):
     global requested
-    contetnt = ""
+    contetnt = "no hash found"
     if "hash" in request.GET:
         hash = request.GET["hash"]
         requested.put(hash)
