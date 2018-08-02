@@ -46,44 +46,59 @@ def IsDownloading(torrent:dict):
     
 def ExecuteSubProcesses():
     print("executing subprocesses")
-    Popen(["python3",__file__,"global"])
-    Popen(["python3",__file__,"downloading"])
-    Popen(["python3",__file__,"otherstates"])
+    processes =  [
+        Popen(["python3",__file__,"global"]),
+        Popen(["python3",__file__,"downloading"]),
+        Popen(["python3",__file__,"otherstates"]),
+    ]
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        for process in processes:
+            print(f"killing process : {process.args[2]}")
+            process.kill()
 
 def data():
     return j.loads(o(globalquery).read())
 
 def SendGlobal():
-    def GetDict(line):
-        return dict([pair for pair in list(line.items()) if pair[0] in AcceptedFields])
+    try:
+        def GetDict(line):
+            return dict([pair for pair in list(line.items()) if pair[0] in AcceptedFields])
 
-    AcceptedFields =[
-        "hash",
-        "name",
-        "size",
-        "progress",
-        "state",
-        ]
+        AcceptedFields =[
+            "hash",
+            "name",
+            "size",
+            "progress",
+            "state",
+            ]
 
-    print("sending global")
-    while True:
-        d = data()
-        simplified = j.dumps([GetDict(line) for line in d])
-        Resp("setdata/",SetData(data = simplified))
+        print("sending global")
+        while True:
+            d = data()
+            simplified = j.dumps([GetDict(line) for line in d])
+            Resp("setdata/",SetData(data = simplified))
+    except KeyboardInterrupt:
+        pass
 
 def SendFiles(onlyDownloading:bool):
-    print(f"sendig files, Downloading only={onlyDownloading}")
-    while True:
-        loaded = data()
-        downloading = [torrent for torrent in loaded if IsDownloading(torrent)]
+    try:
+        print(f"sendig files, Downloading only={onlyDownloading}")
+        while True:
+            loaded = data()
+            downloading = [torrent for torrent in loaded if IsDownloading(torrent)]
 
-        for torrent in downloading:
-            loaded.remove(torrent)
-        if onlyDownloading:
-            ParseTorrents(downloading)
-        else:
-            ParseTorrents(loaded)
-
+            for torrent in downloading:
+                loaded.remove(torrent)
+            if onlyDownloading:
+                ParseTorrents(downloading)
+            else:
+                ParseTorrents(loaded)
+    except KeyboardInterrupt:
+        pass
+        
 def main(argc,argv):
     
     if argc != 2:
