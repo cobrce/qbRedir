@@ -1,0 +1,6 @@
+asgi-redis==1.4.3
+asgiref==2.3.2
+channels==2.0.0
+daphne==2.2.1
+Django==1.11.15
+redis==2.10.6

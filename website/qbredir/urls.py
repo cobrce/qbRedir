@@ -21,9 +21,4 @@ from django.views.decorators.csrf import csrf_exempt
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$',csrf_exempt(qbredir.views.home),name="home"),
-    url(r'^setdata/$',csrf_exempt(qbredir.views.setdata),name="setdata"),
-    url(r'^getdata/$',csrf_exempt(qbredir.views.getdata),name="getdata"),
-    url(r'^files$',csrf_exempt(qbredir.views.files),name="files"),
-    url(r'^getqueue',csrf_exempt(qbredir.views.getqueue),name="getqueue"),
-    url(r'^settorrentdata',csrf_exempt(qbredir.views.settorrentdata),name ="setttorrentdata"),
-]
+    ]

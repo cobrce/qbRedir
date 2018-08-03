@@ -42,15 +42,17 @@ INSTALLED_APPS = [
 	
 ]
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'asgi_redis.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
-        },
-        'ROUTING': 'qbredir.routing.channel_routing',
-    }
-}
+ASGI_APPLICATION = 'qbredir.routing.application'
+
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'asgi_redis.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [('127.0.0.1', 6379)],
+#         },
+#         'ROUTING': 'qbredir.routing.channel_routing',
+#     }
+# }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
