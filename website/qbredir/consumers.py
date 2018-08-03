@@ -11,9 +11,17 @@ class Consumer(WebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = ""
+        self.connected = False
 
     def connect(self):
         self.accept()
+        
+        if self.add_to_dictionary():
+            response_dict = self.success_connection_dict
+            self.connected = True
+        else:
+            response_dict = self.failed_connection_dict
+        self.send(j.dumps(response_dict))
 
     def receive(self,text_data):
         try:
@@ -25,9 +33,14 @@ class Consumer(WebsocketConsumer):
                 loaded["src"] = self.name
                 destination.send(text_data = j.dumps(loaded))
                 print(f"sent from {self.name} to {destination}")
+            else:
+                self.default_command()
         except:
-            pass
+            self.default_command()
     
+    def default_command(self):
+        self.send("")
+
     def get_destination(self,loaded:dict):
         if "dest" in loaded and loaded["dest"] in self.destination_dictionary:
             return self.destination_dictionary[loaded["dest"]]
@@ -36,12 +49,32 @@ class Consumer(WebsocketConsumer):
 
     def __str__(self):
         return self.name
+
+    @property
+    def success_connection_dict(self):
+        return{
+            "status":"connected",
+            "name" : self.name,
+            "type" : self.connection_type,
+        }
+
+    @property
+    def failed_connection_dict(self):
+        return {
+            "status":"not connected",
+        }
+
     @property
     def session_dictionary(self):
         raise NotImplementedError
     
     @property
     def destination_dictionary(self):
+        raise NotImplementedError
+
+    #either client or server
+    @property
+    def connection_type(self):
         raise NotImplementedError
 
     def add_to_dictionary(self):
@@ -63,7 +96,6 @@ class Consumer(WebsocketConsumer):
             while name +str(index) in servers:
                 index+=1
             name = name+str(index)
-
         return name
 
 class Server(Consumer):
@@ -74,13 +106,11 @@ class Server(Consumer):
     @property
     def destination_dictionary(self):
         return clients
-      
-    def connect(self):
-        super().connect()
-        if self.add_to_dictionary():
-            self.send(text_data=f"server connected as : {self.name}")
-        else:
-            self.send(text_data="server not connection : name not provided")
+    
+    @property
+    def connection_type(self):
+        return "server"
+            
 
 class Client(Consumer):
     @property
@@ -89,21 +119,26 @@ class Client(Consumer):
 
     @property
     def destination_dictionary(self):
-        return servers   
+        return servers
 
-    def connect(self):
-        super().connect()
-        if self.add_to_dictionary():
-            self.send(text_data=f"client connected as : {self.name}")
-            self.send(text_data=self.display_servers_message)
-        else:
-            self.send(text_data="client not connection : name not provided")
+    @property
+    def connection_type(self):
+        return "client"
+
+    @property
+    def success_connection_dict(self):
+        return {
+            **super().success_connection_dict,
+            **self.servers_list_as_dict,
+        }
     
     @property
-    def display_servers_message(self):
-        message ="available servers :"
-        for key in servers.keys():
-            message += "\n" + key
-        pass
-        return message
+    def servers_list_as_dict(self):
+        return {
+            "servers" : list(servers.keys()),
+        }
+
+    def default_command(self):
+        self.send(text_data=j.dumps(self.success_connection_dict))
+
     
