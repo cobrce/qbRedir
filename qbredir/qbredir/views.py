@@ -12,7 +12,10 @@ def CheckGet(request):
 def home(request):
     assert isinstance(request, HttpRequest)
     reload(qbredir.dumper)
-    content = qbredir.dumper.dump(data)
+    if data!="":
+        content = qbredir.dumper.dump(data)
+    else:
+        content = ""
     return HttpResponse(content)
 
 def setdata(request):

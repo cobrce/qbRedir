@@ -10,7 +10,7 @@ from time import sleep
 from multiprocessing import Process
 
 
-url = "http://cob.pythonanywhere.com/"
+url = "http://127.0.0.1:8000/"
 globalquery = "http://127.0.0.1:8080/query/torrents"
 filesquery = "http://127.0.0.1:8080/query/propertiesFiles/{0}"
 client = requests.session()
@@ -25,7 +25,7 @@ def SetData(**kwarg):
 def Resp(path:str,data:dict):
     #print(f"posting to : {path}")
     r = client.post(url + path,data=data)
-    #print(f"response : {r.text}")
+    print(f"response : {r.text}")
 
 def ReadAndSendTorrent(hash):
     torrent = o(filesquery.format(hash)).read().decode()
@@ -60,7 +60,10 @@ def ExecuteSubProcesses():
             process.kill()
 
 def data():
-    return j.loads(o(globalquery).read())
+    return j.loads(data_str())
+
+def data_str():
+    return o(globalquery).read()
 
 def SendGlobal():
     try:
