@@ -87,13 +87,13 @@ class Consumer(WebsocketConsumer):
             return False 
 
     def disconnect(self,close_code):
-        if self.name in servers:
-            del servers[self.name]
+        if self.name in self.session_dictionary:
+            del self.session_dictionary[self.name]
 
     def uniquename(self,name:str):
-        if name in servers:
+        if name in self.session_dictionary:
             index = 1
-            while name +str(index) in servers:
+            while name +str(index) in self.session_dictionary:
                 index+=1
             name = name+str(index)
         return name
