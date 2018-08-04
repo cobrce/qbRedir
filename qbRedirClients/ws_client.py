@@ -300,7 +300,7 @@ class main():
         fields_n_handlers ={
             "state" : lambda x : f"State : {self.getstate(x)}",
             "dl_speed" : lambda x : f"Download speed : {sizeformat(x)}/s",
-            "up_speed" : lambda x : f"Upload speed :  {sizeformat(x)}",
+            "up_speed" : lambda x : f"Upload speed :  {sizeformat(x)}/s",
             "progress" : lambda x : f"Progress {x*100:.2f}",
             "total_size": lambda x : f"Size :  {sizeformat(x)}",
             "total_downloaded" : lambda x : f"Downloaded {sizeformat(x)}",
