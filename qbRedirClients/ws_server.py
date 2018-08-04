@@ -24,6 +24,7 @@ def connect():
         for i in range(5):
             print(f"retry in {5-i} seconds")
             sleep(1)
+            
 
 def server():
     ws = None
