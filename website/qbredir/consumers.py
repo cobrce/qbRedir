@@ -21,23 +21,47 @@ class Consumer(WebsocketConsumer):
             self.connected = True
         else:
             response_dict = self.failed_connection_dict
-        self.send(j.dumps(response_dict))
+        self.send(response_dict)
 
     def receive(self,text_data):
         try:
-            loaded = j.loads(text_data)
-            # check if the destination is provided and connected
-            destination = self.get_destination(loaded)
-            if destination is not None:
+            if text_data =="":
+                self.default_command()
+                return
+
+            try:
+                loaded = j.loads(text_data)
+            except:
+                self.send(self.invalid_json_message_dict)
+                return
+            
+            destination = loaded.get("dest")
+            if not destination:
+                self.default_command()
+
+            elif destination not in self.destination_dictionary:
+                self.send({
+                    "error" : "destination not connected"
+                })
+
+            else:
                 # adjust the dictionary and send it
                 loaded["src"] = self.name
-                destination.send(text_data = j.dumps(loaded))
+                self.destination_dictionary[destination].send(text_data = j.dumps(loaded))
                 print(f"sent from {self.name} to {destination}")
-            else:
-                self.default_command()
-        except:
-            self.default_command()
+
+        except Exception as e:
+            self.send(self.internal_error_message_dict)
+            print(e)
+            
     
+    def send(self, text_data=None, bytes_data=None, close=False):
+        if text_data is not None:
+            if type(text_data) is not str:
+                text_data = j.dumps(text_data)
+
+        super().send(text_data=text_data,bytes_data=bytes_data,close=close)
+
     def default_command(self):
         self.send("")
 
@@ -49,6 +73,18 @@ class Consumer(WebsocketConsumer):
 
     def __str__(self):
         return self.name
+
+    @property
+    def invalid_json_message_dict(self):
+        return {
+            "error" : "invalid json format",            
+        }
+
+    @property
+    def internal_error_message_dict(self):
+        return{
+            "error" : "Internal error"
+        }
 
     @property
     def success_connection_dict(self):
@@ -138,7 +174,14 @@ class Client(Consumer):
             "servers" : list(servers.keys()),
         }
 
+    @property
+    def invalid_json_message_dict(self):
+        return{
+            **super().invalid_json_message_dict,
+            **self.servers_list_as_dict,
+        }
+
     def default_command(self):
-        self.send(text_data=j.dumps(self.success_connection_dict))
+        self.send(self.success_connection_dict)
 
     
