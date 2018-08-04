@@ -5,7 +5,9 @@ from time import sleep
 from urllib.request import urlopen as o
 import re
 from datetime import timedelta
-torrents_url = r"http://127.0.0.1:8080/query/torrents"
+torrents_url = r"http://127.0.0.1:8080/query/torrents?sort=state"
+hash_filter = r"&hashes={}"
+
 files_url = r"http://127.0.0.1:8080/query/propertiesFiles/{}"
 general_url= r"http://127.0.0.1:8080/query/propertiesGeneral/{}"
 
@@ -62,10 +64,15 @@ class Client:
             print(error)  
                  
 
-    def listoftorrents(self):
+    def listoftorrents(self,save:bool,hash:str=None):
         print("\nRequesting list of torrents\n")
-        self.torrents = self.send_url(torrents_url)
-        return self.torrents
+        url = torrents_url
+        if hash:
+            url+=hash_filter.format(hash)
+        torrents = self.send_url(url)
+        if save:
+            self.torrents = torrents
+        return torrents
 
     @solvehash
     def torrent_general(self,hash:str ="",index:int=None):
@@ -140,7 +147,14 @@ class main():
         self.list_of_commands()
         while True:
             try:
-                command = input().strip()
+                prompt = ""
+                if self.client.server:
+                    prompt = f"({self.client.server})"
+                if self.torrent:
+                    prompt+= f".({self.torrent.get('name')})"
+                prompt +="$ "
+
+                command = input(prompt).strip()
                 if command:
                     for pattern,handler in self.commands.items():
                         match = re.match(pattern,command,re.IGNORECASE)
@@ -159,7 +173,7 @@ class main():
         servers : display list of servers
         server <index> / server <name> [--f] : select server by index/name [--f to force set server name]
         server : display selected server
-        torrents : display list of torrents of selered server
+        torrents : display list of torrents of selected server
         torrent <index>/<beginning of name> : select a torrent by index/part of name 
         torrent : display selected torrent
         filter <string> : display torrents lines that contains <string>
@@ -251,7 +265,7 @@ class main():
 
     @tryexcept
     def torrents(self,*args,**kwargs):
-        torrents = self.client.listoftorrents()
+        torrents = self.client.listoftorrents(True)
         if torrents:
             self.torrents_table = self.format_torrents_table_dict(torrents)            
             self.display_torrents_table_dict(self.torrents_table)
@@ -290,19 +304,26 @@ class main():
             "progress" : lambda x : f"Progress {x*100:.2f}",
             "total_size": lambda x : f"Size :  {sizeformat(x)}",
             "total_downloaded" : lambda x : f"Downloaded {sizeformat(x)}",
-            "eta" : lambda x : f"ETA : {str(timedelta(x))}",
+            "eta" : lambda x : f"ETA : {str(timedelta(seconds=x))}",
             "seeds" : lambda x : f"Seeds : {x}",
             "save_path" : lambda x : f"Path : {x}",
             "category" : lambda x : f"Category : {x}",
         }
         if self.torrent:
             if "hash" in self.torrent:
+                # read general properties
                 general = self.client.torrent_general(hash = self.torrent["hash"])
+                # update this torrent
+                try:
+                    torrent = self.client.listoftorrents(False,hash=self.torrent["hash"])[0]
+                except:
+                    torrent = self.torrent
+
                 for field,handler in fields_n_handlers.items():
                     if field in general:
                         value = general.get(field)
-                    elif field in self.torrent:
-                        value = self.torrent.get(field)
+                    elif field in torrent:
+                        value = torrent.get(field)
                     else:
                         continue
                     print(handler(value))
@@ -332,12 +353,12 @@ class main():
     @staticmethod
     def format_torrents_table_dict(torrents : list) -> dict:
         table = {
-            "header" :f" index progress {'state':11} {'size':10}         name",
+            "header" :f" index progress {'state':>11} {'size':>15}         name",
         }
         i = 0
         for line in torrents:
             size,unit = main.GetSize(line['size'])
-            table[i] = f" {i:05} {line['progress']:8.2f} {main.getstate(line['state']):11}  {size:10.2f} {unit}  {line['name']}"
+            table[i] = f" {i:05} {line['progress']*100:8.2f} {main.getstate(line['state']):>11}  {size:10.2f} {unit:3}  {line['name']}"
             i+=1
 
         return table
