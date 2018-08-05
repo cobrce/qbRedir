@@ -5,7 +5,9 @@ from threading import Thread
 from time import sleep
 
 server_name = "PrimeServer"
-server_url = f"ws://127.0.0.1:8000/server/{server_name}"
+website = "ws://127.0.0.1:8000"
+
+server_url = f"{website}/server/{server_name}"
 
 def connect():
     while True:

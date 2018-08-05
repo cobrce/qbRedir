@@ -5,11 +5,17 @@ from time import sleep
 from urllib.request import urlopen as o
 import re
 from datetime import timedelta
-torrents_url = r"http://127.0.0.1:8080/query/torrents?sort=state"
-hash_filter = r"&hashes={}"
 
-files_url = r"http://127.0.0.1:8080/query/propertiesFiles/{}"
-general_url= r"http://127.0.0.1:8080/query/propertiesGeneral/{}"
+
+qbitorrent_webui = "http://127.0.0.1:8080"
+website = "ws://127.0.0.1:8000"
+clientName = "PrimeClient"
+
+
+torrents_url = f"{qbitorrent_webui}/query/torrents?sort=state"
+hash_filter = r"&hashes={}"
+files_url = f"{qbitorrent_webui}/query/propertiesFiles/{{}}"
+general_url= f"{qbitorrent_webui}/query/propertiesGeneral/{{}}"
 
 def tryexcept(method):
     def _register(*args,**kwargs):
@@ -34,9 +40,9 @@ def solvehash(function):
     return _register
 
 class Client:    
-    def __init__(self):
-        self.client_name = "PrimeClient"
-        self.client_url = f"ws://127.0.0.1:8000/client/{self.client_name}"
+    def __init__(self,client_name):
+        self.client_name = client_name
+        self.client_url = f"{website}/client/{self.client_name}"
         self.ws = None
         self.servers = list()
         self.torrents = list()
@@ -129,7 +135,7 @@ class Client:
 class main():
 
     def __init__(self):
-        self.client = Client()
+        self.client = Client(clientName)
         self.torrent = None
         self.commands = {
             r"^(q|quit|exit)$" : exit,
