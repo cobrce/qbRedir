@@ -1,5 +1,4 @@
-from django.http import HttpRequest, Http404,HttpResponse
+from django.http import HttpResponse
 
 def home(request):
-    content = '<font face="verdana">Wow, so empty</font>'
-    return HttpResponse(content)
+    return HttpResponse('<font face="verdana">Wow, such empty</font>')
