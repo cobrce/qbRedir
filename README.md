@@ -20,10 +20,10 @@ The project is divided to three parts
 * **Client** : this is the program that sends commands to the website
 * **Website** : sends commands from client to server and response from server to client
 
-### Server
+### Server (ws_server.py)
 Waits from the website the arival of json encoded dictionary having at least two keys : src and url, the first one is the source of the command (to replay to), the second is the url to be opened and have it content sent back to the client (through the website)
 
-### Client
+### Client (ws_client.py)
 Many client-commands were implemented and most of them implies the server opening a url and send back it's content
 The response from server should contain only 
 
@@ -50,4 +50,29 @@ The messages from servers are sent only to clients and vice versa.
 ##### Adding a server command
 Actually the server support only the "url" command but anyone can be implemented, and this can be done without modifying the website since it cares only about the "dest" key
 
-p.s : this is my first django channel project, feel free to correct anything that seem wrong.
+## Test (locally)
+First update the **qbitorrent_webui** in **ws_client.py** to point to the address of qbittorent webui
+
+It's preferable to use a virtual environment where you install the required modules
+
+* First run the website
+```
+cd website
+python manage.py runserver
+```
+*In case you set a specific address update the variable **website** in both **ws_server.py** and **ws_client.py***
+
+
+* Run the server in another terminal
+```
+cd qbRedirClients
+python ws_server.py
+```
+
+* Then the client in another terminal
+```
+cd qbRedirClients
+python ws_client.py
+```
+
+***p.s** : this is my first django channel project, feel free to correct anything that seem wrong.*
