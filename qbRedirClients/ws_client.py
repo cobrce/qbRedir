@@ -169,17 +169,17 @@ class main():
         print("""
     Available commands :
         help : display this message
-        reconnect : connect as client (should be called first)
+        reconnect : reconnect the client (should be called first)
         servers : display list of servers
         server <index> / server <name> [--f] : select server by index/name [--f to force set server name]
         server : display selected server
-        torrents : display list of torrents of selected server
-        torrent <index>/<beginning of name> : select a torrent by index/part of name 
+        torrents : display the list of torrents of the selected server
+        torrent <index>/<beginning of name> : select a torrent by index or by beginning of name
         torrent : display selected torrent
-        filter <string> : display torrents lines that contains <string>
-        update : update status of selected torrent
+        filter <string> : filter the table of torrents by showing only lines containing <string>
+        update : display the actual status of selected torrent
         files : display list of files selected torrent
-        q / exit / quit: quit
+        q / exit / quit : quit
     """)    
 
     @tryexcept
