@@ -24,8 +24,7 @@ The project is divided to three parts
 Waits from the website the arival of json encoded dictionary having at least two keys : src and url, the first one is the source of the command (to replay to), the second is the url to be opened and have it content sent back to the client (through the website)
 
 ### Client (ws_client.py)
-Many client-commands were implemented and most of them implies the server opening a url and send back it's content
-The response from server should contain only 
+Many client-commands were implemented and most of them implies the server opening a url and send back it's content, which sent in a dictionary as a value of the key "data"
 
 ##### Client commands 
 This is the list of client-commands to be entered in the client (not the actual ones sent to server)
