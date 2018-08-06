@@ -5,6 +5,7 @@ from time import sleep
 from urllib.request import urlopen as o
 import re
 from datetime import timedelta
+from msvcrt import kbhit as getch
 
 
 qbitorrent_webui = "http://127.0.0.1:8080"
@@ -56,17 +57,54 @@ class Client:
 
     def recv(self):
         while True:
-            loaded = j.loads(self.ws.recv())
-            if loaded.get("src") in self.allowed_sources:
-                break
+            try:
+                if self.ws:
+                    loaded = j.loads(self.ws.recv())
+                    if loaded.get("src") in self.allowed_sources:
+                        break
+                else:
+                    raise ConnectionError
+            except ConnectionError:
+                return "Connection error, nothing received",{}
         
         return loaded.get("error"),loaded
 
+    def _auto_reconnect(self,first_try):
+        
+        if self.autoreconnect:               
+            if first_try:
+                self.connect()
+                first_try= False
+                return True
+                
+            for i in range(5):
+                print(f"Reconnecting in {5-i} seconds, press a key to abort")
+                sleep(1)
+                if getch():
+                    print("Reconnection aborted")
+                    return False # auto reconnect aborted by user
+            self.connect()
+            return True
+        else:
+            return False # auto reconnect disabled
+    
     def send(self,message):
         if type(message) is not str:
             message = j.dumps(message)
 
-        self.ws.send(message)
+        first_try = True        
+        while True:
+            try:
+                if self.ws is None:
+                    raise ConnectionError
+                self.ws.send(message)
+                return True
+            except ConnectionError :
+                if not self._auto_reconnect(first_try):
+                    return False
+                first_try = False
+            except:
+                pass
 
     @tryexcept
     def list_of_server(self):
@@ -76,7 +114,8 @@ class Client:
             self.servers = loaded["servers"]
             return self.servers
         else:
-            print(error)  
+            print(error)
+            return {}
                  
 
     def listoftorrents(self,save:bool,hash:str=None):
@@ -126,26 +165,32 @@ class Client:
     
     def connect(self):
         if self.ws is not None:
-            self.ws.close()
-        self.ws = create_connection(self.client_url)
-        error,loaded = self.recv()
-        if not error:
             try:
-                status = loaded.get('status')
-                if status == "connected":
-                    print(f"connected as :{loaded.get('name')}")
-                else:
-                    print(f"status : {status}")
-            except:
-                print("invalid json response")
-                return
-        else:
-            print(error)
+                self.ws.close()
+            except: # socket already closed excption
+                pass
+        try:
+            self.ws = create_connection(self.client_url)
+            error,loaded = self.recv()
+            if not error:
+                try:
+                    status = loaded.get('status')
+                    if status == "connected":
+                        print(f"connected as :{loaded.get('name')}")
+                    else:
+                        print(f"status : {status}")
+                except:
+                    print("invalid json response")
+                    return
+            else:
+                print(error)
+        except:
             print("Not connected, maybe server is down")
 
 class main():
 
     def __init__(self):
+        self.list_of_commands()
         self.client = Client(clientName)
         self.torrent = None
         self.torrents_table = list()
@@ -163,7 +208,6 @@ class main():
         }
 
     def loop(self):
-        self.list_of_commands()
         while True:
             try:
                 prompt = ""
