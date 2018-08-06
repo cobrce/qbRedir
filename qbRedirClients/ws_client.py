@@ -40,6 +40,15 @@ def solvehash(function):
         return function(self,hash=hash)
     return _register
 
+def checkserver(function):
+    def _register(self,*args,**kwargs):
+        if self.client.server:
+            return function(self,*args,**kwargs)
+        else:
+            print("No server selected")
+    return _register
+
+
 class Client:    
     def __init__(self,client_name,autoreconnect = True):
         self.client_name = client_name
@@ -161,7 +170,7 @@ class Client:
             else:
                 print(error)                
         else:
-            print("No server selected")
+            raise Exception("No server selected")
     
     def connect(self):
         if self.ws is not None:
@@ -222,6 +231,7 @@ class main():
                     for pattern,handler in self.commands.items():
                         match = re.match(pattern,command,re.IGNORECASE)
                         if match:
+                            print("")
                             handler(**match.groupdict())
                             break
                     else:
@@ -334,8 +344,8 @@ class main():
                 printselected()
 
     @tryexcept
+    @checkserver
     def torrents(self,*args,**kwargs):
-
         if kwargs.get("cached") is None:
             self.torrents_table = self.format_torrents_table_dict(self.client.listoftorrents(True))
         else:
@@ -344,11 +354,12 @@ class main():
             if self.torrents_table:
                 self.display_table(self.torrents_table)
             else:
-                print("<No torrent to display")
+                print("<No torrent to display>")
         else:
             print("<Silent mode>")
 
     @tryexcept
+    @checkserver
     def files(self,*args,**kwargs):
         if self._hash_of_selected_torrent: # if there is any error message it's already printed by the property getter
                 if kwargs.get("cached") is None:
@@ -410,6 +421,7 @@ class main():
             print("No torrent selected")
 
     @tryexcept
+    @checkserver
     def update(self,*args,**kwargs):
 
         fields_n_handlers ={
@@ -434,7 +446,7 @@ class main():
             except:
                 # use the current value
                 torrent = self.torrent
-
+            print("")
             for field,handler in fields_n_handlers.items():
                 if field in general:
                     value = general.get(field)
@@ -465,6 +477,7 @@ class main():
 
     @staticmethod
     def display_table(table:dict,condition = lambda x:True,print_header=True,print_footer = True):
+        print("")
         # header
         if print_header and  "header" in table:
             print(table.get("header"))
