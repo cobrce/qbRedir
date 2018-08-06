@@ -32,15 +32,25 @@ This is the list of client-commands to be entered in the client (not the actual 
 * **help** : display the list of commands
 * **reconnect** : reconnect the client
 * **servers** : display list of servers
-* **server <index> / server <name> [--f]** : select server by index or by name [--f to force set server name]
+* **server \<index\> / \<server name\> [-f]** : select server by index or by name
+    * -f to force set \<server name\>
 * **server** : display selected server
-* **torrents** : display the list of torrents of the selected server
-* **torrent <index>/<beginning of name>** : select a torrent by index or beginning of name
+* **torrents [-s]** : retrieve and display the list of torrents of the selected server
+    * if "-s"used the list is not displayed
+    * if "-c" is used display cached list
+    * (the two parameter are mutually exlusive)
+* **torrent \<index\>/\<beginning of name\>** : select a torrent by index or beginning of name
 * **torrent** : display selected torrent
-* **filter <string>** : filter the table of torrents by showing only lines containing <string>
+* **files [-s]** : retrieve list of files selected torrent
+    * if "-s"used the list is not displayed
+    * if "-c" is used display cached list
+    * (the two parameter are mutually exlusive)
+* **tfilter \<string\>** : filter the table of torrents by showing only entries containing \<string\>
+* **ffilter \<string\>** : filter the table of files by showing only entries containing \<string\>
 * **update** : display the actual status of selected torrent
-* **files** (not implemented yet) : display list of files selected torrent
 * **q / exit / quit** : quit
+
+The **tfilter** and **ffilter** commands use cached data
 
 ### Website
 When a message (a json formatted dictionary) arrives from either the server or client it checks for the key "dest", if it's existing and matches a connected client or server, the website sends the dict to it (client or server) after adding the "src" key

@@ -28,7 +28,6 @@ class Consumer(WebsocketConsumer):
             if text_data =="":
                 self.default_command()
                 return
-
             try:
                 loaded = j.loads(text_data)
             except:

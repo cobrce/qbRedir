@@ -40,10 +40,11 @@ def solvehash(function):
     return _register
 
 class Client:    
-    def __init__(self,client_name):
+    def __init__(self,client_name,autoreconnect = True):
         self.client_name = client_name
         self.client_url = f"{website}/client/{self.client_name}"
         self.ws = None
+        self.autoreconnect = autoreconnect
         self.servers = list()
         self.torrents = list()
         self.server = ""
@@ -137,16 +138,18 @@ class main():
     def __init__(self):
         self.client = Client(clientName)
         self.torrent = None
+        self.torrents_table = list()
         self.commands = {
             r"^(q|quit|exit)$" : exit,
             r"^help$" : self.list_of_commands,
             r"^reconnect$" : self.reconnect,
             r"^servers$" : self.servers,
-            r"^server(\s+((?P<index>[\d]+)|(?P<name>.+?))(\s+(?P<force>--f))?)?$" : self.selectserver,
-            r"^torrents$" : self.torrents,
-            r"^filter\s+(?P<beginning>.+)$" : self.filter,
+            r"^server(\s+((?P<index>[\d]+)|(?P<name>.+?))(\s+(?P<force>-f))?)?$" : self.selectserver,
+            r"^torrents(((\s+)(?P<cached>-c))|((\s+)(?P<silent>-s)))?$" : self.torrents,
+            r"^(?P<mode>t|f)filter\s+(?P<string>.+)$" : self.filter,
             r"^torrent(\s+((?P<index>[\d]+)|(?P<beginning>.+)))?$" : self.selecttorrent,
             r"^update$" : self.update,
+            r"^files(((\s+)(?P<cached>-c))|((\s+)(?P<silent>-s)))?$" : self.files,
         }
 
     def loop(self):
@@ -177,14 +180,22 @@ class main():
         help : display this message
         reconnect : reconnect the client (should be called first)
         servers : display list of servers
-        server <index> / server <name> [--f] : select server by index/name [--f to force set server name]
+        server <index> / server <name> [-f] : select server by index/name
+            "-f" to force set <server name>
         server : display selected server
-        torrents : display the list of torrents of the selected server
+        torrents [-c][-s]: retrieve and display the list of torrents of the selected server
+            if "-s"used the list is not displayed
+            if "-c" is used display cached list
+            (the two parameter are mutually exlusive)
         torrent <index>/<beginning of name> : select a torrent by index or by beginning of name
         torrent : display selected torrent
-        filter <string> : filter the table of torrents by showing only lines containing <string>
+        files [-c][-s] : retrieve list of files selected torrent
+            if "-s"used the list is not displayed
+            if "-c" is used display cached list
+            (the two parameter are mutually exlusive)
+        tfilter <string> : filter the table of torrents by showing only entries containing <string>
+        ffilter <string> : filter the table of files by showing only entries containing <string>
         update : display the actual status of selected torrent
-        files : display list of files selected torrent
         q / exit / quit : quit
     """)    
 
@@ -268,22 +279,60 @@ class main():
             else:
                 printselected()
 
-
     @tryexcept
     def torrents(self,*args,**kwargs):
-        torrents = self.client.listoftorrents(True)
-        if torrents:
-            self.torrents_table = self.format_torrents_table_dict(torrents)            
-            self.display_torrents_table_dict(self.torrents_table)
+
+        if kwargs.get("cached") is None:
+            self.torrents_table = self.format_torrents_table_dict(self.client.listoftorrents(True))
+        else:
+            print("<Cached mode>")
+        if kwargs.get("silent") is None:
+            if self.torrents_table:
+                self.display_table(self.torrents_table)
+            else:
+                print("<No torrent to display")
+        else:
+            print("<Silent mode>")
+
+    @tryexcept
+    def files(self,*args,**kwargs):
+        if self._hash_of_selected_torrent: # if there is any error message it's already printed by the property getter
+                if kwargs.get("cached") is None:
+                    # update
+                    self.files_table_of_selected_torrent = self.format_files_table_dict(self.client.listoffiles(self._hash_of_selected_torrent))
+                else:
+                    print("<Cached mode>")
+
+                if kwargs.get("silent") is None:
+                    if self.files_table_of_selected_torrent:
+                        self.display_table(self.files_table_of_selected_torrent)
+                    else:
+                        print("<No file to display>")
+                else:
+                    print("<Silent mode>")
+
     
     @tryexcept
     def filter(self,*args,**kwargs):
-        beginning = kwargs.get("beginning")
-        if beginning:
-            self.display_torrents_table_dict(
-                self.torrents_table,
-                lambda x: beginning.lower() in x.lower()
-            )
+        mode_switcher = {
+            "t" :(self.torrents_table,"<Table of torrents is empty>"),
+            "f" :(self.files_table_of_selected_torrent,"<Table of files is empty>"),
+        }
+        string = kwargs.get("string")
+        mode = kwargs.get("mode")
+
+        if string and mode:
+            table,errormessage =  mode_switcher[mode]
+
+            if table and len(table)>0:
+                self.display_table(
+                    table,
+                    lambda x: string.lower() in x.lower(),
+                    True,
+                    False
+                )
+            else:
+                print(errormessage)
         else:
             print("No enough parameters")
 
@@ -296,48 +345,60 @@ class main():
             }
             return states.get(state[:6],'Unknown')
 
+    @property
+    def _hash_of_selected_torrent(self):
+        if self.torrent:
+            if "hash" in self.torrent:
+                return self.torrent["hash"]
+            else:
+                print("Can't find 'hash' in torrent")
+        else:
+            print("No torrent selected")
+
     @tryexcept
     def update(self,*args,**kwargs):
 
-        def sizeformat(size):
-            hsize,unit =  self.GetSize(size)
-            return f"{hsize:.2f} {unit}"
-
         fields_n_handlers ={
             "state" : lambda x : f"State : {self.getstate(x)}",
-            "dl_speed" : lambda x : f"Download speed : {sizeformat(x)}/s",
-            "up_speed" : lambda x : f"Upload speed :  {sizeformat(x)}/s",
-            "progress" : lambda x : f"Progress {x*100:.2f}",
-            "total_size": lambda x : f"Size :  {sizeformat(x)}",
-            "total_downloaded" : lambda x : f"Downloaded {sizeformat(x)}",
+            "dl_speed" : lambda x : f"Download speed : {self.sizeformat(x)}/s",
+            "up_speed" : lambda x : f"Upload speed :  {self.sizeformat(x)}/s",
+            "progress" : lambda x : f"Progress : {x*100:.2f}%",
+            "total_size": lambda x : f"Size :  {self.sizeformat(x)}",
+            "total_downloaded" : lambda x : f"Downloaded {self.sizeformat(x)}",
             "eta" : lambda x : f"ETA : {str(timedelta(seconds=x))}",
             "seeds" : lambda x : f"Seeds : {x}",
             "save_path" : lambda x : f"Path : {x}",
             "category" : lambda x : f"Category : {x}",
         }
-        if self.torrent:
-            if "hash" in self.torrent:
-                # read general properties
-                general = self.client.torrent_general(hash = self.torrent["hash"])
-                # update this torrent
-                try:
-                    torrent = self.client.listoftorrents(False,hash=self.torrent["hash"])[0]
-                except:
-                    torrent = self.torrent
 
-                for field,handler in fields_n_handlers.items():
-                    if field in general:
-                        value = general.get(field)
-                    elif field in torrent:
-                        value = torrent.get(field)
-                    else:
-                        continue
-                    print(handler(value))
-            else:
-                print("Can't find 'hash' in torrent")
-        else:
-            print("No torrent selected")
+        if self._hash_of_selected_torrent:
+            general = self.client.torrent_general(hash = self._hash_of_selected_torrent)
             
+            try:
+                # try updating the torrent from the client
+                torrent = self.client.listoftorrents(False,hash=self._hash_of_selected_torrent)[0]
+            except:
+                # use the current value
+                torrent = self.torrent
+
+            for field,handler in fields_n_handlers.items():
+                if field in general:
+                    value = general.get(field)
+                elif field in torrent:
+                    value = torrent.get(field)
+                else:
+                    continue
+                print(handler(value))
+    
+    @property
+    def files_table_of_selected_torrent(self):
+        if self.torrent and "files" in self.torrent:
+            return self.torrent["files"]
+    
+    @files_table_of_selected_torrent.setter
+    def files_table_of_selected_torrent(self,table):
+        if self.torrent:
+            self.torrent["files"] = table
 
     @staticmethod
     def GetSize(size):
@@ -349,25 +410,45 @@ class main():
         return size, units[unit]
 
     @staticmethod
-    def display_torrents_table_dict(table:dict,condition = lambda x:True):
-        print(table.get("header"))
+    def display_table(table:dict,condition = lambda x:True,print_header=True,print_footer = True):
+        # header
+        if print_header and  "header" in table:
+            print(table.get("header"))
+        # content
         for index in table:
-            if index!="header":
-                if condition(table[index]):
+            if index not in ["header","footer"]:
+                if condition(table[index]): # filter content (default condiction is always True)
                     print(table[index])
+        # footer
+        if print_footer and "footer" in table:
+            print(table.get("footer"))
     
     @staticmethod
     def format_torrents_table_dict(torrents : list) -> dict:
-        table = {
-            "header" :f" index progress {'state':>11} {'size':>15}         name",
-        }
-        i = 0
-        for line in torrents:
-            size,unit = main.GetSize(line['size'])
-            table[i] = f" {i:05} {line['progress']*100:8.2f} {main.getstate(line['state']):>11}  {size:10.2f} {unit:3}  {line['name']}"
-            i+=1
+        def format_torrents_table_line(line:dict,index:int):
+            return f" {index:05} {line['progress']*100:8.2f}% {main.getstate(line['state']):>11}  {main.sizeformat(line['size'])}  {line['name']}"
 
-        return table
+        if (torrents is None):
+            print ("<No torrent>")
+        else:
+            return {
+                "header" :f" index progress {'state':>11} {'size':>15}         name",
+                **dict((i,format_torrents_table_line(torrents[i],i)) for i in range(len(torrents)))
+            }
+
+    @staticmethod
+    def format_files_table_dict(files : list) -> dict:
+        def format_file_line(line:dict,index:int):
+            return f"Index : {index:04}\nName : {line['name']}\nSize : {main.sizeformat(line['size'])}\nProgress : {line['progress']*100:8.2f}%\nPriority : {line['priority']}\n"
+        return {
+            "footer" : f"Number of files : {len(files)}\n",
+            **dict((i,format_file_line(files[i],i)) for i in range(len(files))),
+        }
+
+    @staticmethod
+    def sizeformat(size):
+            hsize,unit =  main.GetSize(size)
+            return f"{hsize:10.2f} {unit:3}"
 
 if __name__ =="__main__":
     main().loop()
