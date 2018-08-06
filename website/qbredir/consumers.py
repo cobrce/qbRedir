@@ -76,18 +76,21 @@ class Consumer(WebsocketConsumer):
     @property
     def invalid_json_message_dict(self):
         return {
+            "src" : "host",
             "error" : "invalid json format",            
         }
 
     @property
     def internal_error_message_dict(self):
         return{
+            "src" : "host",
             "error" : "Internal error"
         }
 
     @property
     def success_connection_dict(self):
         return{
+            "src" : "host",
             "status":"connected",
             "name" : self.name,
             "type" : self.connection_type,
@@ -96,6 +99,7 @@ class Consumer(WebsocketConsumer):
     @property
     def failed_connection_dict(self):
         return {
+            "src" : "host",
             "status":"not connected",
         }
 
@@ -126,9 +130,9 @@ class Consumer(WebsocketConsumer):
             del self.session_dictionary[self.name]
 
     def uniquename(self,name:str):
-        if name in self.session_dictionary:
+        if name in ["host",*self.session_dictionary]:
             index = 1
-            while name +str(index) in self.session_dictionary:
+            while name +str(index) in ["host",*self.session_dictionary]:
                 index+=1
             name = name+str(index)
         return name

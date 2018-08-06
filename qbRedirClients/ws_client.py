@@ -49,9 +49,17 @@ class Client:
         self.torrents = list()
         self.server = ""
         self.connect()
+    
+    @property
+    def allowed_sources(self):
+        return ["host",self.server]
 
     def recv(self):
-        loaded = j.loads(self.ws.recv())
+        while True:
+            loaded = j.loads(self.ws.recv())
+            if loaded.get("src") in self.allowed_sources:
+                break
+        
         return loaded.get("error"),loaded
 
     def send(self,message):
@@ -72,10 +80,12 @@ class Client:
                  
 
     def listoftorrents(self,save:bool,hash:str=None):
-        print("\nRequesting list of torrents\n")
         url = torrents_url
         if hash:
             url+=hash_filter.format(hash)
+            print(f"Requesting update for {hash}")
+        else:
+            print("Requesting list of torrents")
         torrents = self.send_url(url)
         if save:
             self.torrents = torrents
@@ -83,12 +93,12 @@ class Client:
 
     @solvehash
     def torrent_general(self,hash:str ="",index:int=None):
-        print("\nRequesting torrent's general properties\n")
+        print("Requesting torrent's general properties")
         return self.send_url(general_url.format(hash))
 
     @solvehash
     def listoffiles(self,hash:str ="",index:int=None):
-        print("\nRequesting torrent's files\n")
+        print("Requesting torrent's files")
         return self.send_url(files_url.format(hash))
 
     def send_url(self,url):
